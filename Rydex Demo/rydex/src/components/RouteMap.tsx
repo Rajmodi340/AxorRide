@@ -8,6 +8,7 @@ import {
   useMap,
 } from "react-leaflet";
 import L from "leaflet";
+import axios from "axios";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, Navigation2 } from "lucide-react";
@@ -121,19 +122,45 @@ export default function RouteMap({ pickup, drop, onDistance, onChange }: Props) 
   const [km,    setKm]    = useState<number | null>(null);
 
   const geocode = async (q: string): Promise<[number, number] | null> => {
-    const r = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=1`);
-    const d = await r.json();
+    try{
+const { data: d } = await axios.get("https://api.geoapify.com/v1/geocode/autocomplete",{
+  params:{
+    text: q.trim(),
+    apiKey: process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY || "",
+    filter:"countrycode:in",
+    limit: 1
+  }
+})
+    
+
     if (!d?.features?.length) return null;
     const [lon, lat] = d.features[0].geometry.coordinates;
     return [lat, lon];
+    }
+    catch(error){
+      console.error("Geocoding error", error);
+      return null;
+    }
   };
 
   const reverseGeocode = async (lat: number, lon: number): Promise<string> => {
-    const r = await fetch(`https://photon.komoot.io/reverse?lat=${lat}&lon=${lon}&limit=1`);
-    const d = await r.json();
-    if (!d?.features?.length) return "";
-    const p = d.features[0].properties;
-    return [p.name, p.city, p.state, p.country].filter(Boolean).join(", ");
+    try {
+      const { data: d } = await axios.get("https://api.geoapify.com/v1/geocode/reverse",{
+        params:{
+          lat,
+          lon,
+          apiKey: process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY || "",
+          filter:"countrycode:in"
+        }
+      })
+      
+      if (!d?.features?.length) return "";
+      const p = d.features[0].properties;
+      return [p.name, p.city, p.state, p.country].filter(Boolean).join(", ");
+    } catch (error) {
+      console.error("Reverse geocoding error", error);
+      return "";
+    }
   };
 
   const loadRoute = async (a: [number, number], b: [number, number]) => {

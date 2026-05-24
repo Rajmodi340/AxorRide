@@ -185,21 +185,31 @@ export default function RidePage() {
     onCancel: handleCancel, onRetryPayment: fetchBooking, router,
   };
 
+  // Only render map when all positions are available
+  const allPositionsReady = driverPos && pickupPos && dropPos;
+
   return (
     <div className="h-screen w-full bg-zinc-100 flex flex-col lg:flex-row overflow-hidden">
 
       {/* ══ MAP ══ */}
       <div className="relative flex-1 h-full z-0">
-        <LiveRideMap
-          driverLocation={driverPos}
-          pickupLocation={pickupPos!}
-          dropLocation={dropPos!}
-          status={mapStatus}
-          onStats={({ distanceToPickup, durationToPickup, distanceToDrop, durationToDrop }) => {
-            setDistanceToPickup(distanceToPickup); setEtaToPickup(durationToPickup);
-            setDistanceToDrop(distanceToDrop);     setEtaToDrop(durationToDrop);
-          }}
-        />
+        {allPositionsReady ? (
+          <LiveRideMap
+            driverLocation={driverPos}
+            pickupLocation={pickupPos}
+            dropLocation={dropPos}
+            status={mapStatus}
+            onStats={({ distanceToPickup, durationToPickup, distanceToDrop, durationToDrop }) => {
+              setDistanceToPickup(distanceToPickup); setEtaToPickup(durationToPickup);
+              setDistanceToDrop(distanceToDrop);     setEtaToDrop(durationToDrop);
+            }}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full w-full">
+            <div className="w-10 h-10 rounded-full border-2 border-zinc-300 border-t-zinc-900 animate-spin" />
+            <span className="ml-4 text-zinc-500 font-medium">Loading map…</span>
+          </div>
+        )}
         <motion.div
           initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.5 }}

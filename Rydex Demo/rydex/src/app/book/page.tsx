@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import axios from "axios";
 
 type Place = {
   id: string; name: string; city?: string; state?: string;
@@ -52,8 +53,15 @@ export default function BookPage() {
   const searchAddress = async (q: string, setResults: (r: Place[]) => void, restrict?: string | null) => {
     if (!q || q.trim().length < 3) { setResults([]); return; }
     try {
-      const res  = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q.trim())}&limit=8&lang=en`);
-      const data = await res.json();
+      const { data } = await axios.get("https://api.geoapify.com/v1/geocode/autocomplete", {
+        params: {
+          text: q.trim(),
+          apiKey: process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY || "",
+          filter:"countrycode:in",
+          limit:5,
+          
+        }
+      });
       let results: Place[] = (data?.features ?? []).map((f: any) => ({
         id: String(f.properties.osm_id),
         name: f.properties.name,
@@ -64,7 +72,7 @@ export default function BookPage() {
         lat: f.geometry.coordinates[1],
         lng: f.geometry.coordinates[0],
       }));
-      if (restrict) results = results.filter(p => p.countrycode === restrict);
+      if (restrict) results = results.filter(p => !p.countrycode || p.countrycode === restrict);
       setResults(results);
     } catch { setResults([]); }
   };
@@ -78,8 +86,19 @@ export default function BookPage() {
     navigator.geolocation.getCurrentPosition(
       async ({ coords }) => {
         try {
-          const res  = await fetch(`https://photon.komoot.io/reverse?lat=${coords.latitude}&lon=${coords.longitude}&limit=1`);
-          const data = await res.json();
+        const {data} =await axios.get("https://api.geoapify.com/v1/geocode/reverse",{
+          params:{
+ lat: coords.latitude.toString(),
+    lon: coords.longitude.toString(),
+    apiKey: process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY || "",
+    filter: "countrycode:in"
+          }
+        })
+   
+ 
+
+  
+        
           if (data?.features?.length) {
             const p    = data.features[0].properties;
             const addr = [p.name, p.street, p.city, p.state, p.country].filter(Boolean).join(", ");
@@ -276,13 +295,13 @@ export default function BookPage() {
                       >
                         {pickupResults.map((p, i) => (
                           <motion.button
-                            key={p.id}
+                            key={p.id && p.id !== "undefined" ? p.id : `${p.name}-${p.lat}-${p.lng}-${i}`}
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             transition={{ delay: i * 0.03 }}
                             onClick={() => {
                               setPickup(fmt(p));
-                              setPickupCountry(p.countrycode || null);
+                              setPickupCountry(p.countrycode || "in");
                               setPickupLat(p.lat); setPickupLng(p.lng);
                               setPickupResults([]);
                             }}
@@ -328,7 +347,7 @@ export default function BookPage() {
                       >
                         {dropResults.map((p, i) => (
                           <motion.button
-                            key={p.id}
+                            key={p.id && p.id !== "undefined" ? p.id : `${p.name}-${p.lat}-${p.lng}-${i}`}
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             transition={{ delay: i * 0.03 }}

@@ -70,6 +70,10 @@ export async function POST(req: NextRequest) {
         isEmailVerified: false,
         otp,
         otpExpiresAt,
+        location: {
+          type: "Point",
+          coordinates: [77.12345, 28.67890], // Default location, update as needed
+        },
       });
     }
 

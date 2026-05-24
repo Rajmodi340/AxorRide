@@ -16,8 +16,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 1️⃣ Find nearby vendors
-    const vendors = await User.find({
+    // 1️⃣ Find nearby vendors (within 5km)
+    let vendors = await User.find({
       role: "vendor",
       isOnline: true,
       vendorStatus: "approved",
@@ -31,6 +31,33 @@ export async function POST(req: NextRequest) {
         }
       }
     }).select("_id")
+
+    // 2️⃣ Fallback 1: If no vendors are within 5km, search within 100km
+    if (!vendors.length) {
+      vendors = await User.find({
+        role: "vendor",
+        isOnline: true,
+        vendorStatus: "approved",
+        location: {
+          $near: {
+            $geometry: {
+              type: "Point",
+              coordinates: [longitude, latitude]
+            },
+            $maxDistance: 100000 // 100km
+          }
+        }
+      }).select("_id")
+    }
+
+    // 3️⃣ Fallback 2: If still no vendors, search for ANY online approved vendor (regardless of distance/location status)
+    if (!vendors.length) {
+      vendors = await User.find({
+        role: "vendor",
+        isOnline: true,
+        vendorStatus: "approved"
+      }).select("_id")
+    }
 
     const vendorIds = vendors.map(v => v._id)
 

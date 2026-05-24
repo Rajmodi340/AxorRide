@@ -106,6 +106,13 @@ export default function LiveRideMap({
   status,
   onStats,
 }: Props) {
+  // Debugging logs
+  console.log("LiveTrackingMap props:", {
+    driverLocation,
+    pickupLocation,
+    dropLocation,
+    status
+  });
   const [routeToPickup, setRouteToPickup] = useState<[number, number][]>([]);
   const [routeToDrop,   setRouteToDrop]   = useState<[number, number][]>([]);
   const prevLocation = useRef<[number, number] | null>(null);
@@ -186,6 +193,13 @@ export default function LiveRideMap({
     if (prevLocation.current) rotateCar(prevLocation.current, driverLocation);
     prevLocation.current = driverLocation;
   }, [driverLocation, status]);
+
+  // Defensive: check for valid coordinates
+  const isValidCoord = (arr: any) => Array.isArray(arr) && arr.length === 2 && arr.every(Number.isFinite);
+  if (!isValidCoord(pickupLocation) || !isValidCoord(dropLocation)) {
+    console.error("Invalid pickup or drop coordinates", { pickupLocation, dropLocation });
+    return <div style={{ color: 'red', padding: 16 }}>Invalid pickup or drop coordinates</div>;
+  }
 
   return (
     <MapContainer

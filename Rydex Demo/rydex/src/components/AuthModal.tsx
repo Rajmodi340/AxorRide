@@ -2,19 +2,21 @@
 
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, Mail, Lock, Eye, EyeOff, User } from "lucide-react";
+import { X, Mail, Lock, Eye, EyeOff, User, ShieldCheck } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 type Props = {
   open: boolean;
   onClose: () => void;
 };
 
-type Step = "login" | "signup" | "otp";
+type Step = "login" | "signup" | "otp" | "admin";
 
 export default function AuthModal({ open, onClose }: Props) {
+  const router = useRouter();
   const [step, setStep] = useState<Step>("login");
 
   const [name, setName] = useState("");
@@ -46,7 +48,7 @@ export default function AuthModal({ open, onClose }: Props) {
   };
 
   // 🔐 LOGIN (NextAuth Credentials)
-  const handleLogin = async () => {
+  const handleLogin = async (isAdminAccess = false) => {
     const res = await signIn("credentials", {
       email,
       password,
@@ -56,6 +58,13 @@ export default function AuthModal({ open, onClose }: Props) {
     if (res?.error) {
       console.log(res.error)
       alert("Invalid email or password");
+      return;
+    }
+
+    if (isAdminAccess) {
+      // In a real scenario, you'd check if the role is actually admin
+      onClose();
+      router.push("/admin/dashboard");
       return;
     }
 
@@ -196,20 +205,97 @@ export default function AuthModal({ open, onClose }: Props) {
                       </div>
 
                       <button
-                        onClick={handleLogin}
+                        onClick={() => handleLogin(false)}
                         className="w-full h-11 rounded-xl bg-black text-white font-semibold hover:bg-gray-900 transition"
                       >
                         Login
                       </button>
                     </div>
 
-                    <p className="mt-6 text-center text-sm text-gray-500">
-                      Don’t have an account?{" "}
+                    <div className="mt-6 text-center text-sm text-gray-500 space-y-2">
+                      <p>
+                        Don’t have an account?{" "}
+                        <button
+                          onClick={() => setStep("signup")}
+                          className="text-black font-medium hover:underline"
+                        >
+                          Sign up
+                        </button>
+                      </p>
+                      <p>
+                        <button
+                          onClick={() => setStep("admin")}
+                          className="text-black font-medium hover:underline flex items-center justify-center gap-1 mx-auto"
+                        >
+                          <ShieldCheck size={14} /> Admin Login
+                        </button>
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* ADMIN LOGIN */}
+                {step === "admin" && (
+                  <motion.div
+                    key="admin"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                  >
+                    <h2 className="text-xl font-semibold flex items-center gap-2">
+                      <ShieldCheck className="text-black" />
+                      Admin Login
+                    </h2>
+
+                    <div className="mt-5 space-y-4">
+                      <div className="flex items-center gap-3 border border-black/20 rounded-xl px-4 py-3 bg-gray-50">
+                        <Mail size={18} className="text-gray-500" />
+                        <input
+                          type="email"
+                          placeholder="Admin Email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="w-full bg-transparent outline-none text-sm"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-3 border border-black/20 rounded-xl px-4 py-3 bg-gray-50">
+                        <Lock size={18} className="text-gray-500" />
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Admin Password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="w-full bg-transparent outline-none text-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="text-gray-500"
+                        >
+                          {showPassword ? (
+                            <EyeOff size={18} />
+                          ) : (
+                            <Eye size={18} />
+                          )}
+                        </button>
+                      </div>
+
                       <button
-                        onClick={() => setStep("signup")}
+                        onClick={() => handleLogin(true)}
+                        className="w-full h-11 rounded-xl bg-black text-white font-semibold hover:bg-gray-900 transition flex items-center justify-center gap-2"
+                      >
+                        Login to Dashboard
+                      </button>
+                    </div>
+
+                    <p className="mt-6 text-center text-sm text-gray-500">
+                      Not an admin?{" "}
+                      <button
+                        onClick={() => setStep("login")}
                         className="text-black font-medium hover:underline"
                       >
-                        Sign up
+                        User Login
                       </button>
                     </p>
                   </motion.div>
