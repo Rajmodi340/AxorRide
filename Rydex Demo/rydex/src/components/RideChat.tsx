@@ -151,8 +151,8 @@ export default function RideChat({
           </div>
         )}
 
-        {Object.entries(grouped).map(([date, dateMessages]) => (
-          <div key={date} className="space-y-2">
+        {Object.entries(grouped).map(([date, dateMessages], groupIdx) => (
+          <div key={date + '-' + groupIdx} className="space-y-2">
 
             {/* Date separator */}
             <div className="flex items-center gap-3 py-1">
@@ -168,9 +168,11 @@ export default function RideChat({
               const isLast = idx === dateMessages.length - 1 ||
                 dateMessages[idx + 1]?.sender !== msg.sender;
 
+              // Fallback to idx if msg.id is missing or duplicated
+              const key = msg.id ? `${msg.id}-${idx}` : `msg-${idx}`;
               return (
                 <motion.div
-                  key={msg.id}
+                  key={key}
                   initial={{ opacity: 0, y: 8, scale: 0.97 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
@@ -240,7 +242,7 @@ export default function RideChat({
                 <div className="flex gap-1 items-center h-3">
                   {[0, 1, 2].map(i => (
                     <motion.span
-                      key={i}
+                      key={`dot-${i}`}
                       className="block w-1.5 h-1.5 bg-zinc-400 rounded-full"
                       animate={{ y: [0, -4, 0] }}
                       transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.15, ease: "easeInOut" }}
@@ -292,9 +294,9 @@ export default function RideChat({
                 </button>
               </div>
               <div className="flex flex-col gap-1.5">
-                {AI_SUGGESTIONS.map(s => (
+                {AI_SUGGESTIONS.map((s, idx) => (
                   <motion.button
-                    key={s}
+                    key={s + '-' + idx}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => { setInput(s); setShowAI(false); }}
                     className="text-left text-sm text-zinc-700 bg-zinc-50 hover:bg-violet-50 hover:text-violet-700 border border-zinc-100 hover:border-violet-200 px-3 py-2 rounded-xl transition-all"
@@ -313,9 +315,9 @@ export default function RideChat({
         className="flex-shrink-0 flex gap-2 px-4 pt-3 pb-2 bg-white border-t border-zinc-100 overflow-x-auto"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
-        {QUICK_REPLIES.map(reply => (
+        {QUICK_REPLIES.map((reply, idx) => (
           <button
-            key={reply}
+            key={reply + '-' + idx}
             onClick={() => sendMessage(reply)}
             className="flex-shrink-0 text-[11px] font-semibold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 active:scale-95 px-3 py-1.5 rounded-full transition-all whitespace-nowrap"
           >
